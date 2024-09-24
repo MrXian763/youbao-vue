@@ -2,21 +2,11 @@
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="点位名称" prop="nodeName">
-        <el-input
-          v-model="queryParams.nodeName"
-          placeholder="请输入点位名称"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+        <el-input v-model="queryParams.nodeName" placeholder="请输入点位名称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="区域" prop="regionId">
         <el-select v-model="queryParams.regionId" placeholder="请选择区域">
-          <el-option
-            v-for="item in regionList"
-            :key="item.id"
-            :label="item.regionName"
-            :value="item.id"
-          />
+          <el-option v-for="item in regionList" :key="item.id" :label="item.regionName" :value="item.id" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -27,42 +17,19 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['manage:node:add']"
-        >新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['manage:node:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['manage:node:edit']"
-        >修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate"
+          v-hasPermi="['manage:node:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['manage:node:remove']"
-        >删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete"
+          v-hasPermi="['manage:node:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['manage:node:export']"
-        >导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport"
+          v-hasPermi="['manage:node:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -74,26 +41,25 @@
       <el-table-column label="所在区域" align="center" prop="region.regionName" />
       <el-table-column label="商圈类型" align="center" prop="businessType">
         <template #default="scope">
-          <dict-tag :options="business_type" :value="scope.row.businessType"/>
+          <dict-tag :options="business_type" :value="scope.row.businessType" />
         </template>
       </el-table-column>
       <el-table-column label="合作商" align="center" prop="partner.partnerName" />
       <el-table-column label="详细地址" align="left" prop="address" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" @click="handleUpdate(scope.row)" v-hasPermi="['manage:node:edit']">修改</el-button>
-          <el-button link type="primary" @click="handleDelete(scope.row)" v-hasPermi="['manage:node:remove']">删除</el-button>
+          <el-button link type="primary" @click="getNodeInfo(scope.row)"
+            v-hasPermi="['manage:vm:list']">查看详情</el-button>
+          <el-button link type="primary" @click="handleUpdate(scope.row)"
+            v-hasPermi="['manage:node:edit']">修改</el-button>
+          <el-button link type="primary" @click="handleDelete(scope.row)"
+            v-hasPermi="['manage:node:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
-    
-    <pagination
-      v-show="total>0"
-      :total="total"
-      v-model:page="queryParams.pageNum"
-      v-model:limit="queryParams.pageSize"
-      @pagination="getList"
-    />
+
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize" @pagination="getList" />
 
     <!-- 添加或修改点位管理对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
@@ -103,32 +69,18 @@
         </el-form-item>
         <el-form-item label="所在区域" prop="regionId">
           <el-select v-model="form.regionId" placeholder="请选择区域">
-            <el-option
-              v-for="item in regionList"
-              :key="item.id"
-              :label="item.regionName"
-              :value="item.id"
-            />
+            <el-option v-for="item in regionList" :key="item.id" :label="item.regionName" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="所属商圈" prop="businessType">
           <el-select v-model="form.businessType" placeholder="请选择商圈类型">
-            <el-option
-              v-for="dict in business_type"
-              :key="dict.value"
-              :label="dict.label"
-              :value="parseInt(dict.value)"
-            ></el-option>
+            <el-option v-for="dict in business_type" :key="dict.value" :label="dict.label"
+              :value="parseInt(dict.value)"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="归属合作商" prop="partnerId">
           <el-select v-model="form.partnerId" placeholder="请选择合作商">
-            <el-option
-              v-for="item in partnerList"
-              :key="item.id"
-              :label="item.partnerName"
-              :value="item.id"
-            />
+            <el-option v-for="item in partnerList" :key="item.id" :label="item.partnerName" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="详细地址" prop="address">
@@ -142,6 +94,24 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 查看详情对话框 -->
+    <el-dialog title="点位详情" v-model="nodeOpen" width="600px" append-to-body>
+      <el-table :data="vmList">
+        <el-table-column label="序号" type="index" width="60" align="center" />
+        <el-table-column label="设备编号" align="center" prop="innerCode" />
+        <el-table-column label="设备状态" align="center" prop="vmStatus">
+          <template #default="scope">
+            <dict-tag :options="vm_status" :value="scope.row.vmStatus" />
+          </template>
+        </el-table-column>
+        <el-table-column label="最后一次供货时间" align="center" prop="lastSupplyTime">
+          <template #default="scope">
+            {{ parseTime(scope.row.lastSupplyTime, '{y}-{m}-{d} {h}:{i}:{s}') }}
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
@@ -149,11 +119,13 @@
 import { listNode, getNode, delNode, addNode, updateNode } from "@/api/manage/node";
 import { listRegion } from "@/api/manage/region";
 import { listPartner } from "@/api/manage/partner";
+import { listVm } from "@/api/manage/vm";
 import { loadAllParams } from "@/api/page";
 import { reactive } from "vue";
 
 const { proxy } = getCurrentInstance();
 const { business_type } = proxy.useDict('business_type');
+const { vm_status } = proxy.useDict('vm_status');
 
 const nodeList = ref([]);
 const open = ref(false);
@@ -266,6 +238,17 @@ function handleUpdate(row) {
   });
 }
 
+/** 查看详情按钮操作 */
+const vmList = ref([]);
+const nodeOpen = ref(false);
+function getNodeInfo(row) {
+  loadAllParams.nodeId = row.id;
+  listVm(loadAllParams).then(response => {
+    vmList.value = response.rows;
+    nodeOpen.value = true;
+  });
+}
+
 /** 提交按钮 */
 function submitForm() {
   proxy.$refs["nodeRef"].validate(valid => {
@@ -290,12 +273,12 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _ids = row.id || ids.value;
-  proxy.$modal.confirm('是否确认删除点位管理编号为"' + _ids + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除点位管理编号为"' + _ids + '"的数据项？').then(function () {
     return delNode(_ids);
   }).then(() => {
     getList();
     proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 /** 导出按钮操作 */
