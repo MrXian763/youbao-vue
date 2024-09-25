@@ -2,12 +2,7 @@
   <div class="app-container">
     <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="策略名称" prop="policyName">
-        <el-input
-          v-model="queryParams.policyName"
-          placeholder="请输入策略名称"
-          clearable
-          @keyup.enter="handleQuery"
-        />
+        <el-input v-model="queryParams.policyName" placeholder="请输入策略名称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -17,42 +12,19 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="Plus"
-          @click="handleAdd"
-          v-hasPermi="['manage:policy:add']"
-        >新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['manage:policy:add']">新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="Edit"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['manage:policy:edit']"
-        >修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate"
+          v-hasPermi="['manage:policy:edit']">修改</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="Delete"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['manage:policy:remove']"
-        >删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete"
+          v-hasPermi="['manage:policy:remove']">删除</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="Download"
-          @click="handleExport"
-          v-hasPermi="['manage:policy:export']"
-        >导出</el-button>
+        <el-button type="warning" plain icon="Download" @click="handleExport"
+          v-hasPermi="['manage:policy:export']">导出</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -69,19 +41,18 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" @click="handleUpdate(scope.row)" v-hasPermi="['manage:policy:edit']">修改</el-button>
-          <el-button link type="primary" @click="handleDelete(scope.row)" v-hasPermi="['manage:policy:remove']">删除</el-button>
+          <el-button link type="primary" @click="getPolicyInfo(scope.row)"
+            v-hasPermi="['manage:vm:list']">查看详情</el-button>
+          <el-button link type="primary" @click="handleUpdate(scope.row)"
+            v-hasPermi="['manage:policy:edit']">修改</el-button>
+          <el-button link type="primary" @click="handleDelete(scope.row)"
+            v-hasPermi="['manage:policy:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
-    
-    <pagination
-      v-show="total>0"
-      :total="total"
-      v-model:page="queryParams.pageNum"
-      v-model:limit="queryParams.pageSize"
-      @pagination="getList"
-    />
+
+    <pagination v-show="total > 0" :total="total" v-model:page="queryParams.pageNum" v-model:limit="queryParams.pageSize"
+      @pagination="getList" />
 
     <!-- 添加或修改策略管理对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
@@ -100,11 +71,27 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 策略详情对话框 -->
+    <el-dialog title="策略详情" v-model="policyOpen" width="500px" append-to-body>
+      <el-form-item label="策略名称" prop="policyName">
+        <el-input v-model="form.policyName" disabled />
+      </el-form-item>
+      <label>包含设备：</label>
+      <el-table :data="vmList">
+        <el-table-column label="序号" type="index" width="100" align="center" />
+        <el-table-column label="设备地址" align="left" prop="addr" show-overflow-tooltip="true" />
+        <el-table-column label="设备编号" align="left" prop="innerCode" />
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Policy">
 import { listPolicy, getPolicy, delPolicy, addPolicy, updatePolicy } from "@/api/manage/policy";
+import { listVm } from "@/api/manage/vm";
+import { loadAllParams } from "@/api/page"
+import { ref } from "vue";
 
 const { proxy } = getCurrentInstance();
 
@@ -202,6 +189,18 @@ function handleUpdate(row) {
   });
 }
 
+/** 查看详情按钮操作 */
+const policyOpen = ref(false);
+const vmList = ref([]);
+function getPolicyInfo(row) {
+  form.value = row;
+  loadAllParams.policyId = row.policyId;
+  listVm(loadAllParams).then(response => {
+    vmList.value = response.rows;
+    policyOpen.value = true;
+  });
+}
+
 /** 提交按钮 */
 function submitForm() {
   proxy.$refs["policyRef"].validate(valid => {
@@ -226,12 +225,12 @@ function submitForm() {
 /** 删除按钮操作 */
 function handleDelete(row) {
   const _policyIds = row.policyId || ids.value;
-  proxy.$modal.confirm('是否确认删除策略管理编号为"' + _policyIds + '"的数据项？').then(function() {
+  proxy.$modal.confirm('是否确认删除策略管理编号为"' + _policyIds + '"的数据项？').then(function () {
     return delPolicy(_policyIds);
   }).then(() => {
     getList();
     proxy.$modal.msgSuccess("删除成功");
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 /** 导出按钮操作 */
