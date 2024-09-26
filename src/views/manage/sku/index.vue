@@ -54,6 +54,15 @@
           v-hasPermi="['manage:sku:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="Upload"
+          @click="handleImport"
+          v-hasPermi="['manage:sku:add']"
+        >导入</el-button>
+      </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -144,6 +153,35 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 导入商品对话框 -->
+     <el-dialog title="数据导入" v-model="excelOpen" width="400px" append-to-body>
+      <el-upload
+        ref="uploadRef"
+        class="upload-demo"
+        :limit="1"
+        :action="uploadExcelUrl"
+        :headers="headers"
+        :auto-upload="false"
+        :on-success="handleUploadSuccess"
+        :on-error="handleUploadError"
+        :before-upload="handleBeforeUpload"
+      >
+        <template #trigger>
+          <el-button type="primary">选择文件</el-button>
+        </template>
+
+        <el-button class="ml-3" type="success" @click="submitUpload">
+          上传
+        </el-button>
+
+        <template #tip>
+          <div class="el-upload__tip">
+            上传文件仅支持，xls/xlsx格式，文件大小不得超过1MB。
+          </div>
+        </template>
+      </el-upload>
+     </el-dialog>
   </div>
 </template>
 
@@ -151,6 +189,8 @@
 import { listSku, getSku, delSku, addSku, updateSku } from "@/api/manage/sku";
 import { listSkuClass } from "@/api/manage/skuClass";
 import { loadAllParams } from "@/api/page";
+import { getToken } from "@/utils/auth";
+import { ref } from "vue";
 
 const { proxy } = getCurrentInstance();
 
@@ -305,6 +345,86 @@ function handleExport() {
   proxy.download('manage/sku/export', {
     ...queryParams.value
   }, `sku_${new Date().getTime()}.xlsx`)
+}
+
+/** 导入按钮操作 */
+const excelOpen = ref(false);
+function handleImport() {
+  excelOpen.value = true;
+}
+
+/** 上传 excel 文件 */
+const uploadExcelUrl = ref(import.meta.env.VITE_APP_BASE_API + "/manage/sku/import");
+const headers = ref({ Authorization: "Bearer " + getToken() });
+const uploadRef = ref();
+function submitUpload() {
+  uploadRef.value.submit();
+}
+
+// 上传成功回调
+function handleUploadSuccess(res, file) {
+  if (res.code === 200) {
+    proxy.$modal.msgSuccess("上传Excel成功");
+    excelOpen.value = false;
+    getList();
+  } else {
+    proxy.$modal.msgError(res.msg);
+  }
+  uploadRef.value.clearFiles();
+  proxy.$modal.closeLoading();
+}
+
+// 上传失败
+function handleUploadError() {
+  proxy.$modal.msgError("上传Excel失败");
+  uploadRef.value.clearFiles();
+  proxy.$modal.closeLoading();
+}
+
+const props = defineProps({
+  modelValue: [String, Object, Array],
+  // 大小限制(MB)
+  fileSize: {
+    type: Number,
+    default: 1,
+  },
+  // 文件类型, 例如['xls', 'xlsx']
+  fileType: {
+    type: Array,
+    default: () => ['xls', 'xlsx'],
+  }
+});
+
+// 上传前loading加载
+function handleBeforeUpload(file) {
+  // 文件格式校验
+  let isExcel = false;
+  if (props.fileType.length) {
+    let fileExtension = "";
+    if (file.name.lastIndexOf(".") > -1) {
+      fileExtension = file.name.slice(file.name.lastIndexOf(".") + 1);
+    }
+    isExcel = props.fileType.some(type => {
+      if (file.type.indexOf(type) > -1) return true;
+      if (fileExtension && fileExtension.indexOf(type) > -1) return true;
+      return false;
+    });
+  }
+  if (!isExcel) {
+    proxy.$modal.msgError(
+      `文件格式不正确, 请上传${props.fileType.join("/")}格式文件!`
+    );
+    return false;
+  }
+  // 文件大小校验
+  if (props.fileSize) {
+    const isLt = file.size / 1024 / 1024 < props.fileSize;
+    if (!isLt) {
+      proxy.$modal.msgError(`上传Excel文件大小不能超过 ${props.fileSize} MB!`);
+      return false;
+    }
+  }
+  proxy.$modal.loading("正在上传Excel文件，请稍候...");
 }
 
 /** 加载商品类型数据 */
